@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>cs.AI, cs.CL, cs.LG, cs.IR, cs.SE, cs.MA updates on arXiv.org</title>
+    <link>http://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.IR+cs.SE+cs.MA</link>
+    <description>cs.AI, cs.CL, cs.LG, cs.IR, cs.SE, cs.MA updates on the arXiv.org e-print archive.</description>
+    <atom:link href="http://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.IR+cs.SE+cs.MA" rel="self" type="application/rss+xml"/>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 06 Oct 2026 10:29:33 +0000</lastBuildDate>
+    <managingEditor>rss-help@arxiv.org</managingEditor>
+    <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+    <skipDays>
+      <day>Saturday</day>
+      <day>Sunday</day>
+    </skipDays>
+    <item>
+      <title>Bayes-Sufficient Compression Is Not Enough: How Does Communication Help Multi-Agent Systems?</title>
+      <link>https://arxiv.org/abs/2610.03769</link>
+      <description>arXiv:2610.03769v1 Announce Type: new 
+Abstract: Multi-agent LLM systems pair a sender with broad context and an executor with a limited local view. We study when a short message improves the executor's next decision, when raw context is preferable, and when a stronger sender helps. Our framework, \emph{receiver-relative bounded coordination}, expresses message utility as receiver gain minus protocol tax. Compression beats raw context when tax savings exceed losses from omitted information and decoder mismatch. Even \emph{Bayes-sufficient} compression can fail when a bounded executor cannot use its surface form. A three-stage decomposition separates externalization, absorption, and \emph{action closure}, explaining how errors remain after the correct content reaches the receiver. Under a single-crossing condition, sender upgrades help above a receiver-burden threshold. Across six benchmarks, the same Qwen protocol raises ContextBench joint accuracy from $0.633$ to $0.775$ but lowers ToolSandbox from $0.889$ to $0.653$. Fixed-message replay reveals closure failures despite correct artifact recovery. These results guide an inference-time selector that improves the accuracy-cost frontier on the evaluated communication regimes.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2610.03769v1</guid>
+      <category>cs.LG</category>
+      <category>cs.IT</category>
+      <category>cs.MA</category>
+      <category>math.IT</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Yi Xie, Zhanke Zhou, Yi Fan, Yong Ge, Bo Han, Bo Liu</dc:creator>
+    </item>
+    <item>
+      <title>Fine-Grained Emotion Classification from Mobile App Reviews: An Empirical Study with Large Language Models</title>
+      <link>https://arxiv.org/abs/2610.03802</link>
+      <description>arXiv:2610.03802v1 Announce Type: new 
+Abstract: Context: Fine-grained emotion classification of mobile app reviews enables requirements engineering activities that go beyond polarity-based opinion mining, including emotionally informed issue prioritisation and feature-oriented feedback analysis. However, automatic fine-grained emotion extraction from app reviews remains understudied. Objectives: Building on a previously published annotation framework and human-labelled ground truth adapted from Plutchik's taxonomy, this paper investigates how large language models can be leveraged for automatic multi-label emotion classification under severe class imbalance. Methods: We compare encoder-only fine-tuning under multi-label and binary-ensemble formulations, decoder-only zero- and few-shot prompting across open-source and proprietary models, and a catalogue of imbalance mitigation strategies (loss reweighting, resampling, generative data augmentation), with the synthetic-review generator and prompting strategy selected via an intrinsic augmentation-utility ranking. Results: Fine-tuned encoders trail the best decoder-only few-shot prompting (macro-F1 0.642) by a wide margin at baseline (multi-label: 0.387; binary ensemble: 0.450); pairing the best multi-label encoder with generative data augmentation and positive-weighted loss closes most of this gap (+0.204) at up to three orders of magnitude lower inference latency than the decoders, with the largest gains on the rarest emotions, from undetected to gains of up to +0.501 F1. Conclusion: Large language models make fine-grained, multi-label emotion classification of app reviews feasible for requirements engineering pipelines, with modest macro-F1, and the best formulation and mitigation strategy are backbone- and formulation-dependent. We release the experimental pipeline, synthetic corpora, and fine-tuned checkpoints for replication and reuse.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2610.03802v1</guid>
+      <category>cs.CL</category>
+      <category>cs.IR</category>
+      <category>cs.SE</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</dc:rights>
+      <dc:creator>Quim Motger, Carlota Catot, Marc Oriol</dc:creator>
+    </item>
+    <item>
+      <title>Least Squares for Time Series Forecasting</title>
+      <link>https://arxiv.org/abs/2610.03812</link>
+      <description>arXiv:2610.03812v1 Announce Type: new 
+Abstract: A time-series forecast is scored on a future value of the series. A representation loss that regresses the next latent, as in LeNEPA, is a different least-squares problem on the same bottleneck. We write both programs down. The forecast program minimizes the error of a decoded latent on the coordinate that will be reported. For a scalar target and a linear decoder, every latent rank of at least one matches ordinary least squares, and an isotropy constraint is only a rescaling: after the decoder is refit, the forecast does not move. The other program fits the whole next vector at a fixed rank, then freezes the encoder and attaches a head. On a four-dimensional series whose last three coordinates are the same autoregression, that rank-1 fit puts mass $0.9998$ on the repeated coordinate and forecasts the remaining signal at the marginal variance $2.794$. The forecast program puts mass $1$ on the signal and matches the innovation variance $0.992$. Rank $2$ gives the vector fit a second direction, and the two programs agree. Iterating the fitted one-step coefficient $0.803$ raises the open-loop error from $0.992$ at one step to $2.700$ at eight steps.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2610.03812v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CV</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</dc:rights>
+      <dc:creator>Weiu-qiou Ciang, Yuzhou Hong, Sherry Chen</dc:creator>
+    </item>
+    <item>
+      <title>Game Plan: What AI can do for Football, and What Football can do for AI</title>
+      <link>https://arxiv.org/abs/2011.09192</link>
+      <description>arXiv:2011.09192v1 Announce Type: cross 
+Abstract: The rapid progress in artificial intelligence (AI) and machine learning has opened unprecedented analytics possibilities in various team and individual sports, including baseball, basketball, and tennis. More recently, AI techniques have been applied to football, due to a huge increase in data collection by professional teams, increased computational power, and advances in machine learning, with the goal of better addressing new scientific challenges involved in the analysis of both individual players' and coordinated teams' behaviors. The research challenges associated with predictive and prescriptive football analytics require new developments and progress at the intersection of statistical learning, game theory, and computer vision. In this paper, we provide an overarching perspective highlighting how the combination of these fields, in particular, forms a unique microcosm for AI research, while offering mutual benefits for professional teams, spectators, and broadcasters in the years to come. We illustrate that this duality makes football analytics a game changer of tremendous value, in terms of not only changing the game of football itself, but also in terms of what this domain can mean for the field of AI. We review the state-of-the-art and exemplify the types of analysis enabled by combining the aforementioned fields, including illustrative examples of counterfactual analysis using predictive models, and the combination of game-theoretic analysis of penalty kicks with statistical learning of player attributes. We conclude by highlighting envisioned downstream impacts, including possibilities for extensions to other sports (real and virtual).</description>
+      <guid isPermaLink="false">oai:arXiv.org:2011.09192v1</guid>
+      <category>cs.AI</category>
+      <category>cs.GT</category>
+      <category>cs.LG</category>
+      <category>cs.MA</category>
+      <category>stat.ML</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</dc:rights>
+      <dc:creator>Karl Tuyls, Shayegan Omidshafiei, Paul Muller, Zhe Wang, Jerome Connor, Daniel Hennes, Ian Graham, William Spearman, Tim Waskett, Dafydd Steele, Pauline Luc, Adria Recasens, Alexandre Galashov, Gregory Thornton, Romuald Elie, Pablo Sprechmann, Pol Moreno, Kris Cao, Marta Garnelo, Praneet Dutta, Michal Valko, Nicolas Heess, Alex Bridgland, Julien Perolat, Bart De Vylder, Ali Eslami, Mark Rowland, Andrew Jaegle, Remi Munos, Trevor Back, Razia Ahamed, Simon Bouton, Nathalie Beauguerlange, Jackson Broshear, Thore Graepel, Demis Hassabis</dc:creator>
+    </item>
+    <item>
+      <title>On the Approximation Relationship between Optimizing Ratio of Submodular (RS) and Difference of Submodular (DS) Functions</title>
+      <link>https://arxiv.org/abs/2101.01631</link>
+      <description>arXiv:2101.01631v2 Announce Type: cross 
+Abstract: We demonstrate that from an algorithm guaranteeing an approximation factor for the ratio of submodular (RS) optimization problem, we can build another algorithm having a different kind of approximation guarantee -- weaker than the classical one -- for the difference of submodular (DS) optimization problem, and vice versa. We also illustrate the link between these two problems by analyzing a \textsc{Greedy} algorithm which approximately maximizes objective functions of the form $\Psi(f,g)$, where $f,g$ are two non-negative, monotone, submodular functions and $\Psi$ is a {quasiconvex} 2-variables function, which is non decreasing with respect to the first variable. For the choice $\Psi(f,g)\triangleq f/g$, we recover RS, and for the choice $\Psi(f,g)\triangleq f-g$, we recover DS. To the best of our knowledge, this greedy approach is new for DS optimization. For RS optimization, it reduces to the standard \textsc{GreedRatio} algorithm that has already been analyzed previously. However, our analysis is novel for this case.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2101.01631v2</guid>
+      <category>cs.DS</category>
+      <category>cs.LG</category>
+      <category>stat.ML</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</dc:rights>
+      <dc:creator>Pierre Perrault, Jennifer Healey, Zheng Wen, Michal Valko</dc:creator>
+    </item>
+    <item>
+      <title>Resisting Adversarial Attacks in Deep Neural Networks using Diverse Decision Boundaries</title>
+      <link>https://arxiv.org/abs/2208.08697</link>
+      <description>arXiv:2208.08697v2 Announce Type: replace 
+Abstract: The security of deep learning (DL) systems is an extremely important field of study as they are being deployed in several applications due to their ever-improving performance to solve challenging tasks. Despite overwhelming promises, the deep learning systems are vulnerable to crafted adversarial examples, which may be imperceptible to the human eye, but can lead the model to misclassify. Protections against adversarial perturbations on ensemble-based techniques have either been shown to be vulnerable to stronger adversaries or shown to lack an end-to-end evaluation. In this paper, we attempt to develop a new ensemble-based solution that constructs defender models with diverse decision boundaries with respect to the original model. The ensemble of classifiers constructed by (1) transformation of the input by a method called Split-and-Shuffle, and (2) restricting the significant features by a method called Contrast-Significant-Features are shown to result in diverse gradients with respect to adversarial attacks, which reduces the chance of transferring adversarial examples from the original to the defender model targeting the same class. We present extensive experimentations using standard image classification datasets, namely MNIST, CIFAR-10 and CIFAR-100 against state-of-the-art adversarial attacks to demonstrate the robustness of the proposed ensemble-based defense. We also evaluate the robustness in the presence of a stronger adversary targeting all the models within the ensemble simultaneously. Results for the overall false positives and false negatives have been furnished to estimate the overall performance of the proposed methodology.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2208.08697v2</guid>
+      <category>cs.LG</category>
+      <category>cs.CR</category>
+      <category>cs.CV</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>replace</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Manaar Alam, Shubhajit Datta, Debdeep Mukhopadhyay, Arijit Mondal, Partha Pratim Chakrabarti</dc:creator>
+    </item>
+    <item>
+      <title>Personal VAD: Speaker-Conditioned Voice Activity Detection</title>
+      <link>https://arxiv.org/abs/1908.04284</link>
+      <description>arXiv:1908.04284v5 Announce Type: replace-cross 
+Abstract: In this paper, we propose "personal VAD", a system to detect the voice activity of a target speaker at the frame level. This system is useful for gating the inputs to a streaming on-device speech recognition system, such that it only triggers for the target user, which helps reduce the computational cost and battery consumption, especially in scenarios where a keyword detector is unpreferable. We achieve this by training a VAD-alike neural network that is conditioned on the target speaker embedding or the speaker verification score. For each frame, personal VAD outputs the probabilities for three classes: non-speech, target speaker speech, and non-target speaker speech. Under our optimal setup, we are able to train a model with only 130K parameters that outperforms a baseline system where individually trained standard VAD and speaker recognition networks are combined to perform the same task.</description>
+      <guid isPermaLink="false">oai:arXiv.org:1908.04284v5</guid>
+      <category>eess.AS</category>
+      <category>cs.LG</category>
+      <category>stat.ML</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>replace-cross</arxiv:announce_type>
+      <dc:rights>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</dc:rights>
+      <dc:creator>Shaojin Ding, Quan Wang, Shuo-yiin Chang, Li Wan, Ignacio Lopez Moreno</dc:creator>
+    </item>
+    <item>
+      <title>Bayes-Sufficient Compression Is Not Enough: How Does Communication Help Multi-Agent Systems?</title>
+      <link>https://arxiv.org/abs/2610.03769</link>
+      <description>arXiv:2610.03769v1 Announce Type: new 
+Abstract: Multi-agent LLM systems pair a sender with broad context and an executor with a limited local view. We study when a short message improves the executor's next decision, when raw context is preferable, and when a stronger sender helps. Our framework, \emph{receiver-relative bounded coordination}, expresses message utility as receiver gain minus protocol tax. Compression beats raw context when tax savings exceed losses from omitted information and decoder mismatch. Even \emph{Bayes-sufficient} compression can fail when a bounded executor cannot use its surface form. A three-stage decomposition separates externalization, absorption, and \emph{action closure}, explaining how errors remain after the correct content reaches the receiver. Under a single-crossing condition, sender upgrades help above a receiver-burden threshold. Across six benchmarks, the same Qwen protocol raises ContextBench joint accuracy from $0.633$ to $0.775$ but lowers ToolSandbox from $0.889$ to $0.653$. Fixed-message replay reveals closure failures despite correct artifact recovery. These results guide an inference-time selector that improves the accuracy-cost frontier on the evaluated communication regimes.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2610.03769v1</guid>
+      <category>cs.LG</category>
+      <category>cs.IT</category>
+      <category>cs.MA</category>
+      <category>math.IT</category>
+      <pubDate>Tue, 06 Oct 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Yi Xie, Zhanke Zhou, Yi Fan, Yong Ge, Bo Han, Bo Liu</dc:creator>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=arXiv Reader
+Comment=Today's arXiv papers picked for you
+Exec=sh -c "\\$HOME/dev/arxiv-reader/desktop/open-window"
+Icon=accessories-dictionary
+Terminal=false
+Categories=Education;
+StartupWMClass=chrome-127.0.0.1__-Default

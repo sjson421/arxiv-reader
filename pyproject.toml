@@ -7,7 +7,13 @@ authors = [
     { name = "Jay Son" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "fastapi>=0.142.2",
+    "interest-memory",
+    "numpy>=2.5.3",
+    "pydantic>=2.13.5",
+    "uvicorn>=0.54.0",
+]
 
 [project.scripts]
 arxiv-reader = "arxiv_reader:main"
@@ -15,3 +21,12 @@ arxiv-reader = "arxiv_reader:main"
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+interest-memory = { path = "../interest-memory", editable = true }
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+]

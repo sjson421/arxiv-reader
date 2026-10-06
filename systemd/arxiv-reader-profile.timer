@@ -1,0 +1,9 @@
+[Unit]
+Description=Rewrite the arXiv reader profile on the first Monday of each month
+
+[Timer]
+OnCalendar=Mon *-*-01..07 08:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

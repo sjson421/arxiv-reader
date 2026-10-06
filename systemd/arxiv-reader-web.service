@@ -1,0 +1,10 @@
+[Unit]
+Description=arXiv reader page on http://127.0.0.1:8732
+
+[Service]
+WorkingDirectory=%h/dev/arxiv-reader
+ExecStart=%h/.local/bin/uv run arxiv-reader serve
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Rewrite the arXiv reader profile from recent feedback
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/dev/arxiv-reader
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/uv run arxiv-reader rewrite-profile

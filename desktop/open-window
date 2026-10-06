@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Opens the digest in its own Chrome app window. Starts the page server first if it isn't running.
+set -euo pipefail
+URL=http://127.0.0.1:8732
+
+if ! curl -s -o /dev/null "$URL"; then
+    cd "$(dirname "$(readlink -f "$0")")/.."
+    nohup "$HOME/.local/bin/uv" run arxiv-reader serve >/dev/null 2>&1 &
+    for _ in $(seq 60); do
+        curl -s -o /dev/null "$URL" && break
+        sleep 0.5
+    done
+fi
+exec google-chrome --app="$URL"
