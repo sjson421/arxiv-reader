@@ -52,7 +52,11 @@ def run(
     with db:
         db.executemany(
             "INSERT OR IGNORE INTO papers VALUES (?, ?, ?, ?, ?)",
-            [(p.id, p.title, p.abstract, p.categories, day.isoformat()) for p, *_ in items],
+            [(p.id, p.title, p.abstract, p.categories, day.isoformat()) for p in papers],
+        )
+        db.executemany(
+            "INSERT INTO feed VALUES (?, ?, ?)",
+            [(day.isoformat(), p.id, s) for p, s in zip(papers, scores)],
         )
         db.execute("INSERT INTO digests (date) VALUES (?)", (day.isoformat(),))
         db.executemany(

@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS papers (
     categories TEXT NOT NULL,
     announced TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS feed (  -- every paper of a day's feed with its stage 1 score, for evals
+    date TEXT NOT NULL,
+    paper_id TEXT NOT NULL REFERENCES papers,
+    score REAL NOT NULL,
+    PRIMARY KEY (date, paper_id)
+);
 CREATE TABLE IF NOT EXISTS digests (
     date TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
