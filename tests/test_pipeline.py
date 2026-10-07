@@ -38,3 +38,10 @@ def test_rewrite_profile_uses_opened_digests_only(app_db, mem, papers):
     assert pipeline.rewrite_profile(app_db, mem, MONDAY, rewrite=rewrite) == "new profile"
     assert len(seen[0][0]) == 4 and len(seen[0][1]) == 1
     assert mem.profile() == "new profile"
+
+
+def test_headline_is_stored_and_falls_back_to_the_title(app_db, mem, papers):
+    run(app_db, mem, MONDAY, papers)
+    assert {r[0] for r in app_db.execute("SELECT headline FROM digest_items")} == {"h"}
+    items = run(app_db, mem, TUESDAY, papers, FakeClaude(fail=True))
+    assert all(h == p.title for p, _, _, h in items)

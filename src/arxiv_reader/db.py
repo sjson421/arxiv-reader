@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS digest_items (
     rank INTEGER NOT NULL,
     bullets TEXT NOT NULL,  -- JSON list
     reason TEXT NOT NULL,
+    headline TEXT,  -- NULL on digests made before headlines existed
     rejected_at TEXT,
     PRIMARY KEY (date, paper_id)
 );
@@ -42,6 +43,8 @@ def connect(path: str | Path = DATA_DIR / "app.db") -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
+    if "headline" not in {r["name"] for r in db.execute("PRAGMA table_info(digest_items)")}:
+        db.execute("ALTER TABLE digest_items ADD COLUMN headline TEXT")
     return db
 
 

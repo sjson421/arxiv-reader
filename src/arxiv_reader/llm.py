@@ -53,8 +53,15 @@ def _papers(papers: Sequence[Paper]) -> str:
 class Review(BaseModel):
     id: str
     score: int = Field(ge=0, le=10, description="How useful this is to the reader, 0 to 10")
+    headline: str = Field(
+        max_length=80,
+        description="A title of at most 10 words, written fresh from the abstract, that says what the paper "
+        "is about and what it does or found. A plain statement, not a question, with no paper or method name",
+    )
     reason: str = Field(description="One line on why it scored this way")
-    bullets: list[str] = Field(min_length=3, max_length=3, description="3 plain-language summary bullets")
+    bullets: list[str] = Field(
+        min_length=3, max_length=5, description="3 to 5 short bullets that explain the gist of the paper"
+    )
 
 
 class Reviews(BaseModel):
@@ -67,7 +74,10 @@ def review(papers: Sequence[Paper], profile: str) -> dict[str, Review]:
         "You rate new arXiv papers for one reader and summarize them. "
         f"The reader's profile:\n<profile>\n{profile}\n</profile>\n"
         "Return one review for every paper. Score how useful the paper is to this reader. "
-        "Write each bullet as one short plain-language sentence a practitioner can act on. " + DATA_NOTE
+        "Give each paper a headline, written from its abstract and not copied from its title, so the reader knows "
+        "right away what the paper is about and what it does or found. "
+        "Write 3 to 5 short bullets per paper that explain its gist in plain words: what it does or found, "
+        "and why it matters. Skip jargon, and keep each bullet to one short sentence. " + DATA_NOTE
     )
     reply = ask(system, _papers(papers), Reviews)
     known = {p.id for p in papers}

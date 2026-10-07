@@ -37,7 +37,8 @@ export default function App() {
       {digest.stale && <p className="banner">Today's digest is not ready. This is the last one.</p>}
       {digest.items.map((item) => (
         <article key={item.id} className={item.rejected ? "rejected" : ""}>
-          <h2><a href={item.link} target="_blank" rel="noreferrer">{item.title}</a></h2>
+          <h2><a href={item.link} target="_blank" rel="noreferrer">{item.headline}</a></h2>
+          <p className="paper-title">{item.title}</p>
           <ul>{item.bullets.map((b, n) => <li key={n}>{b}</li>)}</ul>
           {item.reason && <p className="reason">{item.reason}</p>}
           <button disabled={busy === item.id} onClick={() => toggle(item)}>{item.rejected ? "Undo" : "Not interested"}</button>
