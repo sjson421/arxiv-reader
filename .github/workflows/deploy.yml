@@ -1,0 +1,23 @@
+name: Deploy
+
+# Only pushes to main run this. It executes on the home server's self-hosted runner,
+# so it must never be triggered by pull_request or any other event.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'sjson421/arxiv-reader'
+    runs-on: [self-hosted, arxiv-reader]
+    timeout-minutes: 10
+    steps:
+      - name: Deploy origin/main
+        run: ~/dev/arxiv-reader/deploy.sh
