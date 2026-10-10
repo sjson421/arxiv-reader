@@ -26,5 +26,6 @@ article { background: var(--card); border: 1px solid var(--border); border-radiu
 article.rejected { opacity: 0.45; }
 ul { margin: 0 0 0.5rem; padding-left: 1.2rem; }
 .reason { color: var(--muted); font-size: 0.9rem; margin: 0 0 0.5rem; }
+.paper-title { color: var(--muted); font-size: 0.8rem; margin: -0.25rem 0 0.5rem; }
 .banner { border-left: 4px solid var(--accent); padding: 0.5rem 0.75rem; background: var(--card); }
 button { font: inherit; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--fg); cursor: pointer; }

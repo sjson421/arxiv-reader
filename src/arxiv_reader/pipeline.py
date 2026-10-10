@@ -14,7 +14,7 @@ from arxiv_reader.ingest import Paper
 STAGE1_KEEP = 40
 PROFILE_WINDOW_DAYS = 35  # the profile timer runs monthly
 
-type Item = tuple[Paper, list[str], str]  # paper, bullets, reason
+type Item = tuple[Paper, list[str], str, str]  # paper, bullets, reason, headline
 
 
 def run(
@@ -45,7 +45,7 @@ def run(
             raise llm.LLMError("Claude returned no reviews for the stage 1 papers")
     except llm.LLMError as e:
         print(f"Claude review failed, using stage 1 order: {e}")
-        items = [(p, p.first_sentences(2), "") for p in top[:count]]
+        items = [(p, p.first_sentences(2), "", p.title) for p in top[:count]]
     else:
         items = _choose(mem, top, reviews, count)
 
@@ -54,14 +54,10 @@ def run(
             "INSERT OR IGNORE INTO papers VALUES (?, ?, ?, ?, ?)",
             [(p.id, p.title, p.abstract, p.categories, day.isoformat()) for p in papers],
         )
-        db.executemany(
-            "INSERT INTO feed VALUES (?, ?, ?)",
-            [(day.isoformat(), p.id, s) for p, s in zip(papers, scores)],
-        )
         db.execute("INSERT INTO digests (date) VALUES (?)", (day.isoformat(),))
         db.executemany(
-            "INSERT INTO digest_items (date, paper_id, rank, bullets, reason) VALUES (?, ?, ?, ?, ?)",
-            [(day.isoformat(), p.id, n, json.dumps(b), r) for n, (p, b, r) in enumerate(items)],
+            "INSERT INTO digest_items (date, paper_id, rank, bullets, reason, headline) VALUES (?, ?, ?, ?, ?, ?)",
+            [(day.isoformat(), p.id, n, json.dumps(b), r, h) for n, (p, b, r, h) in enumerate(items)],
         )
     return items
 
@@ -71,7 +67,7 @@ def _choose(mem: InterestMemory, top: list[Paper], reviews: dict[str, llm.Review
     ordered = rank.blend(reviewed, {p: reviews[p.id].score for p in reviewed})
     vecs = mem.embed([p.text for p in ordered])
     picks = [ordered[i] for i in rank.pick_diverse(vecs, count)]
-    return [(p, reviews[p.id].bullets, reviews[p.id].reason) for p in picks]
+    return [(p, reviews[p.id].bullets, reviews[p.id].reason, reviews[p.id].headline) for p in picks]
 
 
 def init(mem: InterestMemory, paragraph: str) -> llm.Interests:

@@ -49,7 +49,7 @@ class FakeClaude:
     def review(self, papers, profile):
         if self.fail:
             raise llm.LLMError("down")
-        return {p.id: llm.Review(id=p.id, score=5, reason="r", bullets=["a", "b", "c"])
+        return {p.id: llm.Review(id=p.id, score=5, reason="r", headline="h", bullets=["a", "b", "c"])
                 for p in papers}
 
 

@@ -4,9 +4,10 @@ import html
 import json
 import os
 import subprocess
+import sys
 from collections.abc import Sequence
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from arxiv_reader.ingest import Paper
 
@@ -18,10 +19,10 @@ class LLMError(Exception):
     pass
 
 
-def ask[T: BaseModel](system: str, prompt: str, schema: type[T]) -> T:
+def ask[T: BaseModel](system: str, prompt: str, schema: type[T], model: str = MODEL) -> T:
     """Runs `claude -p` with no tools and no user settings, and validates the structured reply."""
     cmd = [
-        "claude", "-p", "--model", MODEL, "--output-format", "json",
+        "claude", "-p", "--model", model, "--output-format", "stream-json", "--verbose",
         "--json-schema", json.dumps(schema.model_json_schema()),
         "--tools", "", "--setting-sources", "", "--no-session-persistence",
         "--system-prompt", system,
@@ -35,12 +36,16 @@ def ask[T: BaseModel](system: str, prompt: str, schema: type[T]) -> T:
             if not out.stdout:
                 error = f"claude exited {out.returncode}: {out.stderr.strip()}"
                 continue
-            reply = json.loads(out.stdout)
+            events = [json.loads(line) for line in out.stdout.splitlines()]
+            reply = next(e for e in reversed(events) if e.get("type") == "result")
+            if reply["num_turns"] > 2:  # 2 is the floor: the tool call, then its "provided successfully" echo
+                notes = [c.get("content") for e in events if e.get("type") == "user" for c in e["message"]["content"]]
+                print(f"claude took {reply['num_turns']} turns, ${reply['total_cost_usd']:.2f}: {notes}", file=sys.stderr)
             if reply.get("is_error"):
                 error = reply.get("result", "unknown error")
                 continue
             return schema.model_validate(reply["structured_output"])
-        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, ValidationError) as e:
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, StopIteration, ValidationError) as e:
             error = f"{type(e).__name__}: {e}"
     raise LLMError(error)
 
@@ -53,21 +58,50 @@ def _papers(papers: Sequence[Paper]) -> str:
 class Review(BaseModel):
     id: str
     score: int = Field(ge=0, le=10, description="How useful this is to the reader, 0 to 10")
-    reason: str = Field(description="One line on why it scored this way")
-    bullets: list[str] = Field(min_length=3, max_length=3, description="3 plain-language summary bullets")
+    headline: str = Field(
+        description="A title of at most 10 words, written fresh from the abstract, that says what the paper "
+        "is about and what it does or found. A plain statement, not a question, with no paper or method name",
+    )
+    reason: str = Field(description="One short sentence on how well the paper fits the reader's profile")
+    bullets: list[str] = Field(
+        min_length=1  # not 3: the model gives off-topic papers 1 or 2, and one miss re-emits the whole batch
+    )
+
+    @field_validator("bullets")
+    @classmethod
+    def _at_most_5(cls, bullets: list[str]) -> list[str]:
+        # Trimmed here, not with maxItems: the CLI would reject the whole batch and re-emit all of it.
+        return bullets[:5]
 
 
 class Reviews(BaseModel):
     papers: list[Review]
 
 
-def review(papers: Sequence[Paper], profile: str) -> dict[str, Review]:
-    """Reviews keyed by paper id."""
+WRITING = (
+    "Give each paper a headline, written from its abstract and not copied from its title, so the reader knows "
+    "right away what the paper is about and what it does or found. "
+    "Write 4 or 5 bullets per paper, however well it fits the reader, for someone outside the paper's field who "
+    "sees only the bullets, with no title and no abstract. In this order: (1) what the paper is about, in everyday "
+    "words; (2) the problem and why it matters in general, as the abstract frames it; (3) what the authors do "
+    "about it; (4) what they found, with the key number when there is one; (5) what that changes or enables, if "
+    "the abstract says. Each bullet is one short, self-contained sentence in plain words; explain any technical "
+    "term. Be accurate: copy numbers exactly, keep the abstract's hedges and scope (a small test is a small "
+    "test), and add no opinion, requirement, limitation or claim about how usable the work is. Leave a bullet "
+    "out rather than guess it, and write only four if the fifth would be a guess. "
+    "Write the reason as one short sentence that starts with 'Fits', 'Partly fits' or 'Does not fit', then says "
+    "'because the paper is about <its subject in plain words> and the profile wants <the interest from the "
+    "profile>'. Add no other claim, reaction or hedge. "
+)
+
+
+def review(papers: Sequence[Paper], profile: str, writing: str = WRITING) -> dict[str, Review]:
+    """Reviews keyed by paper id. `writing` is the instruction for the headline and bullets."""
     system = (
         "You rate new arXiv papers for one reader and summarize them. "
         f"The reader's profile:\n<profile>\n{profile}\n</profile>\n"
         "Return one review for every paper. Score how useful the paper is to this reader. "
-        "Write each bullet as one short plain-language sentence a practitioner can act on. " + DATA_NOTE
+        + writing + DATA_NOTE
     )
     reply = ask(system, _papers(papers), Reviews)
     known = {p.id for p in papers}

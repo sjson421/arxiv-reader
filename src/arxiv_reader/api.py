@@ -58,6 +58,7 @@ def create_app(open_db: Callable[[], sqlite3.Connection], open_mem: Callable[[],
                 {
                     "id": r["paper_id"],
                     "title": r["title"],
+                    "headline": r["headline"] or r["title"],
                     "link": appdb.paper(r).link,
                     "bullets": json.loads(r["bullets"]),
                     "reason": r["reason"],

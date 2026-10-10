@@ -14,12 +14,6 @@ CREATE TABLE IF NOT EXISTS papers (
     categories TEXT NOT NULL,
     announced TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS feed (  -- every paper of a day's feed with its stage 1 score, for evals
-    date TEXT NOT NULL,
-    paper_id TEXT NOT NULL REFERENCES papers,
-    score REAL NOT NULL,
-    PRIMARY KEY (date, paper_id)
-);
 CREATE TABLE IF NOT EXISTS digests (
     date TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -31,6 +25,7 @@ CREATE TABLE IF NOT EXISTS digest_items (
     rank INTEGER NOT NULL,
     bullets TEXT NOT NULL,  -- JSON list
     reason TEXT NOT NULL,
+    headline TEXT,  -- NULL on digests made before headlines existed
     rejected_at TEXT,
     PRIMARY KEY (date, paper_id)
 );
@@ -42,6 +37,8 @@ def connect(path: str | Path = DATA_DIR / "app.db") -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
+    if "headline" not in {r["name"] for r in db.execute("PRAGMA table_info(digest_items)")}:
+        db.execute("ALTER TABLE digest_items ADD COLUMN headline TEXT")
     return db
 
 

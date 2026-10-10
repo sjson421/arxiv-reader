@@ -45,5 +45,5 @@ def main() -> None:
                 day, papers = ingest.fetch()
             except (urllib.error.URLError, TimeoutError) as e:
                 sys.exit(f"Could not fetch the arXiv feed, so the last digest stays: {e}")
-            for paper, bullets, reason in pipeline.run(db.connect(), memory(), day or date.today(), papers):
-                print(f"\n{paper.title}\n{paper.link}", *(f"  - {b}" for b in bullets), sep="\n")
+            for paper, bullets, _, headline in pipeline.run(db.connect(), memory(), day or date.today(), papers):
+                print(f"\n{headline}\n{paper.link}", *(f"  - {b}" for b in bullets), sep="\n")
