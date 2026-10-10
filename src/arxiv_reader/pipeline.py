@@ -23,10 +23,8 @@ def run(
     day: date,
     papers: Sequence[Paper],
     review: Callable = llm.review,
-    scored: Callable[[sqlite3.Connection, date, Sequence[Paper], Sequence[float]], None] | None = None,
 ) -> list[Item]:
-    """Builds and stores the digest for `day`. `scored` sees every paper's stage 1 score inside the same
-    transaction, so a caller such as evals can keep them without the app storing them."""
+    """Builds and stores the digest for `day`."""
     if db.execute("SELECT 1 FROM digests WHERE date = ?", (day.isoformat(),)).fetchone():
         print(f"The digest for {day} already exists.")
         return []
@@ -56,8 +54,6 @@ def run(
             "INSERT OR IGNORE INTO papers VALUES (?, ?, ?, ?, ?)",
             [(p.id, p.title, p.abstract, p.categories, day.isoformat()) for p in papers],
         )
-        if scored:
-            scored(db, day, papers, scores)
         db.execute("INSERT INTO digests (date) VALUES (?)", (day.isoformat(),))
         db.executemany(
             "INSERT INTO digest_items (date, paper_id, rank, bullets, reason, headline) VALUES (?, ?, ?, ?, ?, ?)",

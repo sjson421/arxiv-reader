@@ -16,7 +16,7 @@ from interest_memory import InterestMemory
 from arxiv_reader import db as appdb
 from arxiv_reader import llm, pipeline
 from arxiv_reader.ingest import FEED, Paper
-from evals import EVALS_MEMORY, connect, keep_feed, resuming
+from evals import EVALS_MEMORY, connect, resuming
 
 API = "https://export.arxiv.org/api/query"
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
@@ -104,7 +104,7 @@ def main() -> None:
         papers = fetch(day)
         print(f"[{n}/{len(days)}] {day} {len(papers)} papers", flush=True)
         try:
-            pipeline.run(db, mem, day, papers, review=strict_review, scored=keep_feed)
+            pipeline.run(db, mem, day, papers, review=strict_review)
         except ReviewFailed as e:
             print(f"{day} skipped, rerun to retry: {e}", flush=True)
 
