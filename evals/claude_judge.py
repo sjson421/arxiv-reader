@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from arxiv_reader import db as appdb
 from arxiv_reader import llm
-from evals import EVALS_DB, EVALS_MEMORY, resuming
+from evals import EVALS_MEMORY, connect, resuming
 
 WORKERS = 4
 MODEL = "claude-sonnet-5-5"  # pinned here so changing llm.MODEL (the reviewer) never changes this judge
@@ -85,11 +85,7 @@ def judge(abstract: str, profile: str, reason: str, bullets: list[str], model: s
 
 
 def main() -> None:
-    db = appdb.connect(EVALS_DB)
-    db.execute(
-        "CREATE TABLE IF NOT EXISTS grades (rubric TEXT, date TEXT, paper_id TEXT, grade TEXT NOT NULL, "
-        "PRIMARY KEY (rubric, date, paper_id))"
-    )  # cached per rubric: a crash or rerun does not regrade, and editing the rubric starts a fresh set
+    db = connect()
     rubric = hashlib.sha256(RUBRIC.encode()).hexdigest()[:12]
     rows = appdb.items(db, "i.reason != ''")  # blank reason = stage 1 fallback, no review
     profile = InterestMemory(str(EVALS_MEMORY)).profile()

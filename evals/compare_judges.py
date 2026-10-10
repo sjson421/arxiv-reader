@@ -12,7 +12,7 @@ from statistics import correlation, mean
 from interest_memory import InterestMemory
 
 from arxiv_reader import db as appdb
-from evals import EVALS_DB, EVALS_MEMORY, resuming
+from evals import EVALS_MEMORY, connect, resuming
 from evals.claude_judge import DIMENSIONS, RUBRIC, Grade, judge
 
 MODELS = ("claude-sonnet-5-5", "claude-haiku-5-5")
@@ -25,11 +25,7 @@ def main() -> None:
     parser.add_argument("--low", type=int, help="instead, N reviews per dimension that the full Sonnet set scored <= 2")
     args = parser.parse_args()
 
-    db = appdb.connect(EVALS_DB)
-    db.execute(
-        "CREATE TABLE IF NOT EXISTS grades (rubric TEXT, date TEXT, paper_id TEXT, grade TEXT NOT NULL, "
-        "PRIMARY KEY (rubric, date, paper_id))"
-    )
+    db = connect()
     items = appdb.items(db, "i.reason != ''")
     if args.low:
         full = db.execute(

@@ -51,3 +51,10 @@ def test_review_keeps_at_most_5_bullets():
     review = llm.Review(id="a", score=5, headline="h", reason="r", bullets=list("abcdefg"))
     assert review.bullets == list("abcde")
     assert "maxItems" not in llm.Review.model_json_schema()["properties"]["bullets"]
+
+
+def test_scored_hook_sees_every_paper_and_the_app_stores_no_feed(app_db, mem, papers):
+    seen = []
+    pipeline.run(app_db, mem, MONDAY, papers, review=FakeClaude().review, scored=lambda _, day, ps, ss: seen.append((day, len(ps), len(ss))))
+    assert seen == [(MONDAY, len(papers), len(papers))]
+    assert not app_db.execute("SELECT 1 FROM sqlite_master WHERE name = 'feed'").fetchone()

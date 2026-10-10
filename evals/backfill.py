@@ -16,7 +16,7 @@ from interest_memory import InterestMemory
 from arxiv_reader import db as appdb
 from arxiv_reader import llm, pipeline
 from arxiv_reader.ingest import FEED, Paper
-from evals import EVALS_DB, EVALS_MEMORY, resuming
+from evals import EVALS_MEMORY, connect, keep_feed, resuming
 
 API = "https://export.arxiv.org/api/query"
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
@@ -91,7 +91,7 @@ def main() -> None:
 
     if not EVALS_MEMORY.exists():
         shutil.copy(appdb.DATA_DIR / "memory.db", EVALS_MEMORY)
-    mem, db = InterestMemory(str(EVALS_MEMORY)), appdb.connect(EVALS_DB)
+    mem, db = InterestMemory(str(EVALS_MEMORY)), connect()
     days, d = [], args.end
     while len(days) < args.days:
         d = prev_weekday(d)
@@ -104,7 +104,7 @@ def main() -> None:
         papers = fetch(day)
         print(f"[{n}/{len(days)}] {day} {len(papers)} papers", flush=True)
         try:
-            pipeline.run(db, mem, day, papers, review=strict_review)
+            pipeline.run(db, mem, day, papers, review=strict_review, scored=keep_feed)
         except ReviewFailed as e:
             print(f"{day} skipped, rerun to retry: {e}", flush=True)
 

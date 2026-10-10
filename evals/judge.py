@@ -16,7 +16,7 @@ from statistics import mean
 from interest_memory import InterestMemory
 
 from arxiv_reader import db as appdb
-from evals import EVALS_DB, EVALS_MEMORY
+from evals import EVALS_MEMORY, connect
 
 URL = "https://api.typesafe.ai/v1/systemone"
 MODEL = "jev-latest"  # the response names the exact build, which is stored with every grade
@@ -115,11 +115,7 @@ def grade(abstract: str, profile: str, reason: str, bullets: list[str], key: str
 
 def main() -> None:
     key = api_key()
-    db = appdb.connect(EVALS_DB)
-    db.execute(
-        "CREATE TABLE IF NOT EXISTS grades (rubric TEXT, date TEXT, paper_id TEXT, grade TEXT NOT NULL, "
-        "PRIMARY KEY (rubric, date, paper_id))"
-    )  # cached per question set: a rerun does not regrade, and editing QUESTIONS starts a fresh set
+    db = connect()
     rubric = f"jev-{VERSION}"
     rows = appdb.items(db, "i.reason != ''")  # blank reason = stage 1 fallback, no review
     profile = InterestMemory(str(EVALS_MEMORY)).profile()
