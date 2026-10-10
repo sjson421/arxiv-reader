@@ -1,6 +1,6 @@
 from datetime import date
 
-from arxiv_reader import pipeline
+from arxiv_reader import llm, pipeline
 from conftest import FakeClaude, run
 
 MONDAY, TUESDAY = date(2026, 10, 5), date(2026, 10, 6)
@@ -45,3 +45,10 @@ def test_headline_is_stored_and_falls_back_to_the_title(app_db, mem, papers):
     assert {r[0] for r in app_db.execute("SELECT headline FROM digest_items")} == {"h"}
     items = run(app_db, mem, TUESDAY, papers, FakeClaude(fail=True))
     assert all(h == p.title for p, _, _, h in items)
+
+
+def test_review_keeps_at_most_5_bullets():
+    review = llm.Review(id="a", score=5, headline="h", reason="r", bullets=list("abcdefg"))
+    assert review.bullets == list("abcde")
+    assert "maxItems" not in llm.Review.model_json_schema()["properties"]["bullets"]
+

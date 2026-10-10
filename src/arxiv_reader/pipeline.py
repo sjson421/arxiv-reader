@@ -54,10 +54,6 @@ def run(
             "INSERT OR IGNORE INTO papers VALUES (?, ?, ?, ?, ?)",
             [(p.id, p.title, p.abstract, p.categories, day.isoformat()) for p in papers],
         )
-        db.executemany(
-            "INSERT INTO feed VALUES (?, ?, ?)",
-            [(day.isoformat(), p.id, s) for p, s in zip(papers, scores)],
-        )
         db.execute("INSERT INTO digests (date) VALUES (?)", (day.isoformat(),))
         db.executemany(
             "INSERT INTO digest_items (date, paper_id, rank, bullets, reason, headline) VALUES (?, ?, ?, ?, ?, ?)",
