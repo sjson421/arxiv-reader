@@ -39,25 +39,29 @@ def window(day: date) -> tuple[datetime, datetime]:
     return tuple(datetime.combine(d, dtime(14), NY).astimezone(UTC) for d in (start, end))
 
 
+def page(params: str) -> list[ET.Element]:
+    """One arXiv API page, retried with a growing wait because arXiv sometimes answers 503 or drops the connection."""
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(f"{API}?{params}", timeout=120) as resp:
+                return ET.fromstring(resp.read()).findall("a:entry", ATOM)
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == 4:
+                raise
+            time.sleep(30 * (attempt + 1))
+    raise AssertionError  # unreachable: the last attempt returns or raises
+
+
 def fetch(day: date) -> list[Paper]:
     start, end = window(day)
     query = "(" + " OR ".join(f"cat:{c}" for c in CATEGORIES) + ") AND submittedDate:" \
         f"[{start:%Y%m%d%H%M} TO {end:%Y%m%d%H%M}]"
     papers: dict[str, Paper] = {}
     while True:
-        params = urllib.parse.urlencode(
+        entries = page(urllib.parse.urlencode(
             {"search_query": query, "start": len(papers), "max_results": PAGE, "sortBy": "submittedDate"}
-        )
-        for attempt in range(5):
-            try:
-                with urllib.request.urlopen(f"{API}?{params}", timeout=120) as resp:
-                    entries = ET.fromstring(resp.read()).findall("a:entry", ATOM)
-                break
-            except (urllib.error.URLError, TimeoutError):
-                if attempt == 4:
-                    raise
-                time.sleep(30 * (attempt + 1))
-        time.sleep(3)  # arXiv asks for one request per 3 seconds
+        ))
+        time.sleep(3)  # arXiv asks for one request per 3 seconds, including across days
         for e in entries:
             pid = e.findtext("a:id", "", ATOM).rsplit("/", 1)[-1].rsplit("v", 1)[0]
             papers.setdefault(pid, Paper(

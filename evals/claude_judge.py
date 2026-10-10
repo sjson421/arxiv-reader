@@ -5,8 +5,6 @@ Run: uv run python -m evals.claude_judge"""
 import hashlib
 import html
 import json
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from statistics import mean
 
 from interest_memory import InterestMemory
@@ -14,9 +12,8 @@ from pydantic import BaseModel, Field
 
 from arxiv_reader import db as appdb
 from arxiv_reader import llm
-from evals import EVALS_MEMORY, connect, resuming
+from evals import DIMENSIONS, EVALS_MEMORY, connect, grade_missing, resuming
 
-WORKERS = 4
 MODEL = "claude-sonnet-5-5"  # pinned here so changing llm.MODEL (the reviewer) never changes this judge
 
 RUBRIC = (
@@ -64,7 +61,6 @@ RUBRIC = (
     "about people or groups. Otherwise true.\n\n"
     "Give one line of evidence per dimension, in the order relevance, correctness, helpfulness, safe. " + llm.DATA_NOTE
 )
-DIMENSIONS = ("relevance", "correctness", "helpfulness")  # the 1-5 grades; `safe` is a check
 
 
 class Grade(BaseModel):
@@ -89,21 +85,12 @@ def main() -> None:
     rubric = hashlib.sha256(RUBRIC.encode()).hexdigest()[:12]
     rows = appdb.items(db, "i.reason != ''")  # blank reason = stage 1 fallback, no review
     profile = InterestMemory(str(EVALS_MEMORY)).profile()
-    done = {(r["date"], r["paper_id"]) for r in db.execute("SELECT date, paper_id FROM grades WHERE rubric = ?", (rubric,))}
-
-    lock = threading.Lock()  # one connection is shared by the workers
-
-    def grade(r) -> None:
-        g = resuming(lambda: judge(r["abstract"], profile, r["reason"], json.loads(r["bullets"])))
-        with lock, db:
-            db.execute("INSERT INTO grades VALUES (?, ?, ?, ?)", (rubric, r["date"], r["paper_id"], g.model_dump_json()))
-
-    todo = [r for r in rows if (r["date"], r["paper_id"]) not in done]
-    with ThreadPoolExecutor(WORKERS) as pool:
-        list(pool.map(grade, todo))
     stored = {
-        (d, p): Grade.model_validate_json(g)
-        for d, p, g in db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric = ?", (rubric,))
+        k: Grade.model_validate_json(g)
+        for k, g in grade_missing(
+            db, rubric, rows,
+            lambda r: resuming(lambda: judge(r["abstract"], profile, r["reason"], json.loads(r["bullets"]))).model_dump_json(),
+        ).items()
     }
     graded = [(r, stored[r["date"], r["paper_id"]]) for r in rows]
     print(f"rubric={rubric} graded={len(graded)} digests={len({r['date'] for r, _ in graded})}")

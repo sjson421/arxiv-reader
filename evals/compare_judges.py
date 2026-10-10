@@ -5,18 +5,15 @@ import argparse
 import hashlib
 import json
 import random
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from statistics import correlation, mean
 
 from interest_memory import InterestMemory
 
 from arxiv_reader import db as appdb
-from evals import EVALS_MEMORY, connect, resuming
-from evals.claude_judge import DIMENSIONS, RUBRIC, Grade, judge
+from evals import DIMENSIONS, EVALS_MEMORY, connect, grade_missing, resuming
+from evals.claude_judge import MODEL, RUBRIC, Grade, judge
 
-MODELS = ("claude-sonnet-5-5", "claude-haiku-5-5")
-WORKERS = 4
+MODELS = (MODEL, "claude-haiku-5-5")
 
 
 def main() -> None:
@@ -29,7 +26,7 @@ def main() -> None:
     items = appdb.items(db, "i.reason != ''")
     if args.low:
         full = db.execute(
-            "SELECT rubric FROM grades WHERE rubric NOT LIKE '%-claude-%' GROUP BY rubric ORDER BY COUNT(*) DESC LIMIT 1"
+            "SELECT rubric FROM grades WHERE rubric NOT LIKE '%-claude-%' AND rubric NOT LIKE 'jev-%' GROUP BY rubric ORDER BY COUNT(*) DESC LIMIT 1"
         ).fetchone()[0]
         old = {(d, p): json.loads(g) for d, p, g in db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric = ?", (full,))}
         random.seed(0)
@@ -46,25 +43,13 @@ def main() -> None:
         rows = [r for r in items if r["date"] in chosen]
     profile = InterestMemory(str(EVALS_MEMORY)).profile()
     base = hashlib.sha256(RUBRIC.encode()).hexdigest()[:12]
-    lock = threading.Lock()
-
-    def run(model: str, r) -> None:
-        key = f"{base}-{model}"  # the model is part of the cache key, so judges never mix
-        with lock:
-            if db.execute("SELECT 1 FROM grades WHERE rubric=? AND date=? AND paper_id=?", (key, r["date"], r["paper_id"])).fetchone():
-                return
-        g = resuming(lambda: judge(r["abstract"], profile, r["reason"], json.loads(r["bullets"]), model))
-        with lock, db:
-            db.execute("INSERT INTO grades VALUES (?, ?, ?, ?)", (key, r["date"], r["paper_id"], g.model_dump_json()))
-
-    jobs = [(m, r) for r in rows for m in MODELS]
-    with ThreadPoolExecutor(WORKERS) as pool:
-        list(pool.map(lambda j: run(*j), jobs))
-
     grades = {
         m: {
-            (d, p): Grade.model_validate_json(g)
-            for d, p, g in db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric = ?", (f"{base}-{m}",))
+            k: Grade.model_validate_json(g)
+            for k, g in grade_missing(  # the model is part of the cache key, so judges never mix
+                db, f"{base}-{m}", rows,
+                lambda r: resuming(lambda: judge(r["abstract"], profile, r["reason"], json.loads(r["bullets"]), m)).model_dump_json(),
+            ).items()
         }
         for m in MODELS
     }

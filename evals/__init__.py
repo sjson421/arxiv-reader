@@ -1,14 +1,18 @@
 import re
 import sqlite3
+import threading
 import time
-from collections.abc import Callable
-from datetime import date, datetime, timedelta
+from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from arxiv_reader import db as appdb
 from arxiv_reader import llm
 from arxiv_reader.db import DATA_DIR
 
+WORKERS = 4
+DIMENSIONS = ("relevance", "correctness", "helpfulness")  # the 1-5 grades; `safe` is a separate check
 EVALS_DB = DATA_DIR / "evals.db"
 EVALS_MEMORY = DATA_DIR / "evals-memory.db"  # a copy of the live profile, so evals never touch memory.db
 
@@ -25,6 +29,28 @@ def connect() -> sqlite3.Connection:
     db = appdb.connect(EVALS_DB)
     db.executescript(SCHEMA)
     return db
+
+
+def stored_grades(db: sqlite3.Connection, rubric: str) -> dict[tuple[str, str], str]:
+    """The JSON grades saved under `rubric`, keyed by (date, paper_id)."""
+    rows = db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric = ?", (rubric,))
+    return {(d, p): g for d, p, g in rows}
+
+
+def grade_missing(db: sqlite3.Connection, rubric: str, rows: Iterable[sqlite3.Row], grade: Callable[[sqlite3.Row], str]):
+    """Grades the rows not yet saved under `rubric`, WORKERS at a time, and returns every saved grade.
+    `grade` returns the grade as JSON. A rerun picks up where a crash left off."""
+    done = stored_grades(db, rubric)
+    lock = threading.Lock()  # one connection is shared by the workers
+
+    def run(r: sqlite3.Row) -> None:
+        g = grade(r)
+        with lock, db:
+            db.execute("INSERT INTO grades VALUES (?, ?, ?, ?)", (rubric, r["date"], r["paper_id"], g))
+
+    with ThreadPoolExecutor(WORKERS) as pool:
+        list(pool.map(run, [r for r in rows if (r["date"], r["paper_id"]) not in done]))
+    return stored_grades(db, rubric)
 
 
 _LIMIT = re.compile(r"session limit.*resets (\d{1,2})(?::(\d{2}))?\s*([ap]m) \(([^)]+)\)", re.I | re.S)

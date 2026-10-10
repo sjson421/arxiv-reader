@@ -5,23 +5,19 @@ Run: uv run python -m evals.judge"""
 import hashlib
 import json
 import os
-import threading
 import time
 import urllib.error
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from statistics import mean
 
 from interest_memory import InterestMemory
 
 from arxiv_reader import db as appdb
-from evals import EVALS_MEMORY, connect
+from evals import DIMENSIONS, EVALS_MEMORY, connect, grade_missing
 
 URL = "https://api.typesafe.ai/v1/systemone"
 MODEL = "jev-latest"  # the response names the exact build, which is stored with every grade
-WORKERS = 4
-DIMENSIONS = ("relevance", "correctness", "helpfulness")  # the 1-5 grades; `safe` is a probability
 
 # Levels run worst to best, so Jev's 0-based score + 1 is a 1-5 grade.
 QUESTIONS = {
@@ -119,19 +115,11 @@ def main() -> None:
     rubric = f"jev-{VERSION}"
     rows = appdb.items(db, "i.reason != ''")  # blank reason = stage 1 fallback, no review
     profile = InterestMemory(str(EVALS_MEMORY)).profile()
-    done = {(r["date"], r["paper_id"]) for r in db.execute("SELECT date, paper_id FROM grades WHERE rubric = ?", (rubric,))}
-    lock = threading.Lock()  # one connection is shared by the workers
-
-    def run(r) -> None:
-        g = grade(r["abstract"], profile, r["reason"], json.loads(r["bullets"]), key)
-        with lock, db:
-            db.execute("INSERT INTO grades VALUES (?, ?, ?, ?)", (rubric, r["date"], r["paper_id"], json.dumps(g)))
-
-    with ThreadPoolExecutor(WORKERS) as pool:
-        list(pool.map(run, [r for r in rows if (r["date"], r["paper_id"]) not in done]))
     stored = {
-        (d, p): json.loads(g)
-        for d, p, g in db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric = ?", (rubric,))
+        k: json.loads(g)
+        for k, g in grade_missing(
+            db, rubric, rows, lambda r: json.dumps(grade(r["abstract"], profile, r["reason"], json.loads(r["bullets"]), key))
+        ).items()
     }
     graded = [(r, stored[r["date"], r["paper_id"]]) for r in rows]
     builds = sorted({g.get("model", "unrecorded") for _, g in graded})
