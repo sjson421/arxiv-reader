@@ -27,8 +27,25 @@ PREVIOUS = (
     "Each bullet is one short, self-contained sentence in plain words. "
 )
 
+# The prompt tuned against the first Jev questions, which rewarded restating the abstract.
+COPYING = (
+    "Give each paper a headline, written from its abstract and not copied from its title, so the reader knows "
+    "right away what the paper is about and what it does or found. "
+    "Write 4 or 5 bullets per paper, however well it fits the reader, for someone outside the paper's field who "
+    "sees only the bullets, with no title and no abstract. In this order: (1) what the paper is about, in everyday "
+    "words; (2) the problem and why it matters in general, as the abstract frames it; (3) what the authors do "
+    "about it; (4) what they found, with the key number when there is one; (5) what that changes or enables, if "
+    "the abstract says. Each bullet is one short, self-contained sentence in plain words; explain any technical "
+    "term. Be accurate: copy numbers exactly, keep the abstract's hedges and scope (a small test is a small "
+    "test), and add no opinion, requirement, limitation or claim about how usable the work is. Leave a bullet "
+    "out rather than guess it, and write only four if the fifth would be a guess. "
+    "Write the reason as one short sentence that starts with 'Fits', 'Partly fits' or 'Does not fit', then says "
+    "'because the paper is about <its subject in plain words> and the profile wants <the interest from the "
+    "profile>'. Add no other claim, reaction or hedge. "
+)
+
 # Add a candidate here, then: uv run python -m evals.optimize current <name>
-VARIANTS = {"previous": PREVIOUS, "current": llm.WRITING}
+VARIANTS = {"previous": PREVIOUS, "copying": COPYING, "current": llm.WRITING}
 
 
 def sample(db, size: int, seed: int):
@@ -57,7 +74,7 @@ def run_variant(db, rows, profile: str, name: str, key: str) -> dict:
 
     def one(r):
         rv = reviews[r["date"], r["paper_id"]]
-        g = grade(r["abstract"], profile, rv.reason, rv.bullets, key)
+        g = grade(r["abstract"], profile, rv.headline, rv.reason, rv.bullets, key)
         return json.dumps(g | {"review": rv.model_dump()})
 
     grades = {k: json.loads(g) for k, g in grade_missing(db, rubric, todo, one).items()}
