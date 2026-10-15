@@ -1,5 +1,6 @@
 """Compares prompt variants for the headline, bullets and reason. Each variant reviews the same sample of stored
-papers and Jev grades the result; grades are cached per variant, so a rerun only does what is missing.
+papers and Jev grades the result. Reviews are cached per prompt and grades per judge version, so a rerun or a
+judge change only does what is missing.
 Run: uv run python -m evals.optimize [--size 60] [--seed 0] [variant ...]"""
 
 import argparse
@@ -27,8 +28,25 @@ PREVIOUS = (
     "Each bullet is one short, self-contained sentence in plain words. "
 )
 
+# The prompt tuned under the judge questions that paid for copying the abstract. The current prompt must beat it.
+COPYING = (
+    "Give each paper a headline, written from its abstract and not copied from its title, so the reader knows "
+    "right away what the paper is about and what it does or found. "
+    "Write 4 or 5 bullets per paper, however well it fits the reader, for someone outside the paper's field who "
+    "sees only the bullets, with no title and no abstract. In this order: (1) what the paper is about, in everyday "
+    "words; (2) the problem and why it matters in general, as the abstract frames it; (3) what the authors do "
+    "about it; (4) what they found, with the key number when there is one; (5) what that changes or enables, if "
+    "the abstract says. Each bullet is one short, self-contained sentence in plain words; explain any technical "
+    "term. Be accurate: copy numbers exactly, keep the abstract's hedges and scope (a small test is a small "
+    "test), and add no opinion, requirement, limitation or claim about how usable the work is. Leave a bullet "
+    "out rather than guess it, and write only four if the fifth would be a guess. "
+    "Write the reason as one short sentence that starts with 'Fits', 'Partly fits' or 'Does not fit', then says "
+    "'because the paper is about <its subject in plain words> and the profile wants <the interest from the "
+    "profile>'. Add no other claim, reaction or hedge. "
+)
+
 # Add a candidate here, then: uv run python -m evals.optimize current <name>
-VARIANTS = {"previous": PREVIOUS, "current": llm.WRITING}
+VARIANTS = {"previous": PREVIOUS, "copying": COPYING, "current": llm.WRITING}
 
 
 def sample(db, size: int, seed: int):
@@ -46,18 +64,27 @@ def generate(rows, profile: str, writing: str) -> dict[tuple[str, str], llm.Revi
     return out
 
 
+def earlier_reviews(db, prompt: str) -> dict[tuple[str, str], llm.Review]:
+    """Reviews that this prompt and sample got under any judge version. A change to the judge questions then
+    grades them again instead of asking Claude for new ones."""
+    rows = db.execute("SELECT date, paper_id, grade FROM grades WHERE rubric LIKE ?", (f"opt-%-{prompt}-%",))
+    return {(d, p): llm.Review.model_validate(json.loads(g)["review"]) for d, p, g in rows}
+
+
 def run_variant(db, rows, profile: str, name: str, key: str) -> dict:
     writing = VARIANTS[name]
     picked = "".join(r["date"] + r["paper_id"] for r in rows)
-    rubric = f"opt-{name}-{hashlib.sha256((writing + picked).encode()).hexdigest()[:8]}-{VERSION}"
-    reviews = {}
-    if len(stored_grades(db, rubric)) < len(rows):
-        reviews = generate(rows, profile, writing)
-    todo = [r for r in rows if (r["date"], r["paper_id"]) in reviews or (r["date"], r["paper_id"]) in stored_grades(db, rubric)]
+    prompt = hashlib.sha256((writing + picked).encode()).hexdigest()[:8]
+    rubric = f"opt-{name}-{prompt}-{VERSION}"
+    done = stored_grades(db, rubric)
+    reviews = earlier_reviews(db, prompt)
+    if missing := [r for r in rows if (r["date"], r["paper_id"]) not in done.keys() | reviews.keys()]:
+        reviews |= generate(missing, profile, writing)
+    todo = [r for r in rows if (r["date"], r["paper_id"]) in reviews.keys() | done.keys()]
 
     def one(r):
         rv = reviews[r["date"], r["paper_id"]]
-        g = grade(r["abstract"], profile, rv.reason, rv.bullets, key)
+        g = grade(r["abstract"], profile, rv.headline, rv.reason, rv.bullets, key)
         return json.dumps(g | {"review": rv.model_dump()})
 
     grades = {k: json.loads(g) for k, g in grade_missing(db, rubric, todo, one).items()}
@@ -81,7 +108,8 @@ def main() -> None:
     for n, grades in results.items():
         worst = sorted(grades.items(), key=lambda kv: min(kv[1][d] for d in DIMENSIONS))[:3]
         for (date, pid), g in worst:
-            print(f"LOW {n} {pid}: { {d: round(g[d], 2) for d in DIMENSIONS} } bullets={g['review']['bullets']} reason={g['review']['reason']}")
+            rv = g["review"]
+            print(f"LOW {n} {pid}: { {d: round(g[d], 2) for d in DIMENSIONS} } headline={rv['headline']} bullets={rv['bullets']} reason={rv['reason']}")
 
 
 if __name__ == "__main__":

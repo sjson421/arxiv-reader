@@ -62,7 +62,10 @@ class Review(BaseModel):
         description="A title of at most 10 words, written fresh from the abstract, that says what the paper "
         "is about and what it does or found. A plain statement, not a question, with no paper or method name",
     )
-    reason: str = Field(description="One short sentence on how well the paper fits the reader's profile")
+    reason: str = Field(
+        description="Two short sentences to the reader on how well the paper fits their profile and what it "
+        "means for their work"
+    )
     bullets: list[str] = Field(
         min_length=1  # not 3: the model gives off-topic papers 1 or 2, and one miss re-emits the whole batch
     )
@@ -79,19 +82,37 @@ class Reviews(BaseModel):
 
 
 WRITING = (
-    "Give each paper a headline, written from its abstract and not copied from its title, so the reader knows "
-    "right away what the paper is about and what it does or found. "
-    "Write 4 or 5 bullets per paper, however well it fits the reader, for someone outside the paper's field who "
-    "sees only the bullets, with no title and no abstract. In this order: (1) what the paper is about, in everyday "
-    "words; (2) the problem and why it matters in general, as the abstract frames it; (3) what the authors do "
-    "about it; (4) what they found, with the key number when there is one; (5) what that changes or enables, if "
-    "the abstract says. Each bullet is one short, self-contained sentence in plain words; explain any technical "
-    "term. Be accurate: copy numbers exactly, keep the abstract's hedges and scope (a small test is a small "
-    "test), and add no opinion, requirement, limitation or claim about how usable the work is. Leave a bullet "
-    "out rather than guess it, and write only four if the fifth would be a guess. "
-    "Write the reason as one short sentence that starts with 'Fits', 'Partly fits' or 'Does not fit', then says "
-    "'because the paper is about <its subject in plain words> and the profile wants <the interest from the "
-    "profile>'. Add no other claim, reaction or hedge. "
+    "The reader is a software engineer who is new to LLMs and machine learning. They read only your headline, "
+    "bullets and reason, never the abstract. Give each paper a headline of plain words, not copied from its "
+    "title, that says what the paper is about or found. Write 1 to 5 short bullets per paper, as few as the "
+    "paper needs, however well it fits the reader. The first bullet says in one plain sentence what the paper "
+    "is about, so the reader could repeat it to a friend. The others say what it found, and the last one says "
+    "why that matters in practice: what problem it helps with or what it makes possible. Leave out how the "
+    "authors did it unless the reader needs that to understand the finding. Summarize in your own words, as if "
+    "explaining to this reader. Do not restate the abstract's sentences; pick what matters and say it simply. "
+    "Together the bullets should be much shorter than the abstract. Before you answer, reread each bullet as "
+    "this reader and replace any word they would not know. Leave out the names of products, models, methods, "
+    "benchmarks and datasets; say what the thing is instead (for example 'a popular open-source serving "
+    "system', not its name). Explain every technical term in a few everyday words the first time, including "
+    "common LLM terms such as fine-tuning, RAG, KV cache, quantization or agent. Give at most two numbers, and "
+    "give each one its meaning: what was measured and what it was compared with. Be accurate: keep numbers "
+    "exact, do not overstate what was shown (a small test is a small test), and add nothing the abstract does "
+    "not state, such as an opinion or a guess about requirements, cost or limits. Leave a bullet out rather "
+    "than guess it. Keep how well the paper fits the reader out of the bullets; that goes in the reason. Even "
+    "for a paper that does not fit, the bullets say in everyday words what it is about, what it found and why "
+    "that matters. Write the reason as two short sentences that speak to the reader as 'you', in one of these "
+    "forms. Fits: 'Fits your interest in <the specific interest from the profile>. You could <what you could "
+    "concretely use or learn from it for your own work>.' Partly fits: 'Partly fits: <the part that matches a "
+    "specific profile interest>, but <what the paper is about that the profile does not cover>. You could still"
+    " <the part you could use>.' Does not fit: 'Does not fit: it is about <its subject in plain words>, and "
+    "your profile <wants a named interest it misses, or rules out the topic, in the profile's own words>. You "
+    "can skip it.' Never use only a general phrase such as 'LLM applications'. Use only what the abstract "
+    "states: do not guess what using the work needs, and do not call the work niche, impractical, immature or "
+    "of little use. Before you answer, check every review: (1) A software engineer new to LLMs knows every "
+    "word, including math and field terms such as 'rank', 'tensor' or 'stems'; explain or replace any they "
+    "would not. (2) Every bullet says something the abstract states about the paper, never what the paper lacks"
+    " or how well it fits the reader. (3) The last bullet says why the work matters, even for a paper that does"
+    " not fit. (4) The reason follows its form. "
 )
 
 

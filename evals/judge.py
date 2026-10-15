@@ -23,43 +23,54 @@ MODEL = "jev-latest"  # the response names the exact build, which is stored with
 QUESTIONS = {
     "relevance": {
         "type": "score",
-        "instructions": "Judge only review.reason against the profile. Does it correctly say how well the paper fits "
-        "the reader's profile, and does it name what in the profile it matches or misses?",
+        "instructions": "Judge only review.reason against the profile and the abstract. The reader is a software "
+        "engineer who is new to LLMs. Does the reason give the right fit verdict for the profile, name what in the "
+        "profile it matches or misses, and say what the paper means for the reader's own work?",
         "criteria": [
             "The reason contradicts the profile, such as calling a paper 'highly relevant' when the profile rules its topic out.",
             "The verdict is wrong for this profile, or the reason says nothing about fit.",
             "The verdict is defensible but vague or half-right.",
-            "The verdict is right but short or generic, naming a profile interest only in passing or not at all.",
-            "The verdict is right and names the specific profile interests it matches or misses.",
+            "The verdict is right, but the reason names a profile interest only in passing, or does not say what the "
+            "paper means for the reader's work.",
+            "The verdict is right, the reason names the specific profile interests it matches or misses, and it says "
+            "concretely what the reader could use or learn from the paper, or why they can skip it.",
         ],
     },
     "correctness": {
         "type": "score",
         "instructions": "Judge review.reason and review.bullets against the abstract only. Never mark down for "
-        "something the abstract itself does not contain.",
+        "something the abstract itself does not contain. Paraphrase, simplification and plain-language restatement "
+        "are not errors as long as the meaning holds. Leaving details out is not an error. In review.reason, what the "
+        "paper means for the reader's work is supported when it follows from what the abstract shows, and what it "
+        "says about the reader's interests is checked against the profile, not the abstract.",
         "criteria": [
             "Most statements are unsupported by the abstract.",
             "A statement is invented or contradicts the abstract, or states as a finding something the evidence does "
             "not establish (such as 'can replace' a whole class of tools after a test on 10 samples).",
             "A number is slightly off, or a minor factual detail is added that the abstract does not state.",
-            "Everything is supported, though some wording is looser or stronger than the abstract, or a bullet draws "
-            "a reasonable conclusion or takeaway in the spirit of the abstract.",
-            "Every statement and number is stated in the abstract.",
+            "Everything is supported, though a statement slightly overstates or understates the abstract, or a "
+            "bullet draws a reasonable takeaway in its spirit.",
+            "Every statement and number is supported by the abstract.",
         ],
     },
     "helpfulness": {
         "type": "score",
-        "instructions": "Judge review.bullets alone, ignoring the profile. A reader should get the paper's gist (what "
-        "it is about), its importance (why it matters in general) and its consequence (what it changes or enables). "
-        "Count only what the abstract provides. Do not mark down details the bullets leave out; numbers are fine; "
-        "unexplained jargon costs at most one level.",
+        "instructions": "Judge review.headline and review.bullets alone, ignoring the profile. They are a summary "
+        "for a software engineer who is new to LLMs and will not read the abstract. A good summary distills the "
+        "abstract: it says in plain, everyday words what the paper is about, what it found and why that matters. It "
+        "is much shorter and easier to read than the abstract. Leaving out secondary details is good, not a fault. "
+        "Restating the abstract's own sentences, or following them one by one in the same wording, is not "
+        "summarizing. Count only what the abstract provides.",
         "criteria": [
             "The reader cannot tell what the paper is about.",
-            "The gist is vague or partly wrong, including bullets that only repeat a technical abstract's own jargon "
-            "so a non-specialist cannot tell what the paper is about.",
-            "The gist is clear, but most of the importance and consequence the abstract provides is missing.",
-            "The gist is clear and most of the rest is, with one thing the abstract provides missing or unclear.",
-            "The bullets make everything the abstract provides of gist, importance and consequence clear without rereading.",
+            "The bullets mostly repeat or lightly trim the abstract's own sentences and jargon, so they are no clearer "
+            "or quicker to read than the abstract. Or the gist is vague or wrong.",
+            "The gist can be found, but the bullets are hard to follow or padded with details. Or they lean on the "
+            "abstract's phrasing where plain words were needed.",
+            "A clear distillation in plain words, with one weakness. For example, a key finding or why it matters is "
+            "missing, or one term is left unexplained.",
+            "A short, clear distillation in plain words. A software engineer new to LLMs gets what the paper is "
+            "about, what it found and why it matters in one quick read.",
         ],
     },
     "safe": {
@@ -84,9 +95,10 @@ def api_key() -> str:
     raise SystemExit("Set TYPESAFE_API_KEY in the environment or in .env at the repo root.")
 
 
-def grade(abstract: str, profile: str, reason: str, bullets: list[str], key: str) -> dict:
+def grade(abstract: str, profile: str, headline: str, reason: str, bullets: list[str], key: str) -> dict:
     """One Jev call. Scores come back as 1-5 floats, `safe` as the probability that the review is safe."""
-    state = {"profile": profile, "abstract": abstract, "review": {"reason": reason, "bullets": bullets}}
+    review = {"headline": headline, "reason": reason, "bullets": bullets}
+    state = {"profile": profile, "abstract": abstract, "review": review}
     body = json.dumps({"state": state, "model": MODEL, "questions": QUESTIONS}).encode()
     req = urllib.request.Request(
         URL, body, {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
@@ -97,7 +109,7 @@ def grade(abstract: str, profile: str, reason: str, bullets: list[str], key: str
                 reply = json.load(resp)
             break
         except urllib.error.HTTPError as e:
-            if e.code not in (429, 529) or attempt == 4:
+            if not (e.code in (429, 499) or e.code >= 500) or attempt == 4:  # 499 and 5xx are Jev internal errors
                 raise SystemExit(f"Jev returned {e.code}: {e.read().decode()[:300]}") from e
             time.sleep(2**attempt)
     answers = reply["answers"]
@@ -115,12 +127,12 @@ def main() -> None:
     rubric = f"jev-{VERSION}"
     rows = appdb.items(db, "i.reason != ''")  # blank reason = stage 1 fallback, no review
     profile = InterestMemory(str(EVALS_MEMORY)).profile()
-    stored = {
-        k: json.loads(g)
-        for k, g in grade_missing(
-            db, rubric, rows, lambda r: json.dumps(grade(r["abstract"], profile, r["reason"], json.loads(r["bullets"]), key))
-        ).items()
-    }
+
+    def one(r):
+        headline = r["headline"] or ""  # NULL on digests made before headlines existed
+        return json.dumps(grade(r["abstract"], profile, headline, r["reason"], json.loads(r["bullets"]), key))
+
+    stored = {k: json.loads(g) for k, g in grade_missing(db, rubric, rows, one).items()}
     graded = [(r, stored[r["date"], r["paper_id"]]) for r in rows]
     builds = sorted({g.get("model", "unrecorded") for _, g in graded})
     print(f"questions={VERSION} graded={len(graded)} digests={len({r['date'] for r, _ in graded})} builds={builds}")
